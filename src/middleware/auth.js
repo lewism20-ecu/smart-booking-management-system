@@ -1,9 +1,10 @@
 const { verifyToken } = require("../utils/jwt");
 
 function authMiddleware(req, res, next) {
+  
     const header = req.headers.authorization;
 
-    if (!header || !header.startsWith("Berer ")) {
+    if (!header || !header.startsWith("Bearer ")) {
         return res.status(401).json({ error: "Unauthorized", message: "Missing token"});
     }
 
@@ -20,5 +21,6 @@ function authMiddleware(req, res, next) {
         return res.status(401).json({ error: "Unauthorized", message: "Invalid token "});
     }
 }
+
 
 module.exports = authMiddleware;
