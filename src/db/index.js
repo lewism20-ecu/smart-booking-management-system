@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: ".env.local" });
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -12,4 +12,4 @@ const pool = new Pool({
     : false,
 });
 
-module.exports = { pool };
+module.exports = pool;
