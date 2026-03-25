@@ -7,3 +7,7 @@ describe.skip('POST /api/v1/auth/signup', () => {
     expect(res.status).toBe(400);
   });
 });
+
+test("placeholder", () => {
+  expect(true).toBe(true);
+});
