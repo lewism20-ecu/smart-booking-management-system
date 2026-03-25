@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "jest --passWithNoTests",
+    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "lint": "eslint .",
@@ -35,7 +35,6 @@
   "devDependencies": {
     "eslint": "^10.1.0",
     "globals": "^17.4.0",
-    "jest": "^30.3.0",
     "nodemon": "^3.1.14"
   }
 }
