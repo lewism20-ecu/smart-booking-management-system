@@ -1,10 +1,11 @@
-require("dotenv").config({ path: ".env.example" });
+require("dotenv").config({ path: ".env.local" });
 
 const express = require("express");
 
 const app = express();
 app.use(express.json());
 
+app.use("/auth", require("./src/routes/auth"));
 app.use("/users", require("./src/routes/users"));
 app.use("/bookings", require("./src/routes/bookings"));
 
