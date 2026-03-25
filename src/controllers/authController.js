@@ -1,4 +1,4 @@
-cconst pool = require("../db/db");
+const pool = require("../db/db");
 const { hashPassword, comparePassword } = require("../utils/password");
 const { signToken } = require("../utils/jwt");
 const { isStrongPassword } = require("../utils/validation");
