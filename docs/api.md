@@ -114,3 +114,85 @@ Authenticates a user and returns a JWT.
   "error": "Unauthorized",
   "message": "Invalid credentials."
 }
+
+### **GET /users/me**
+
+Returns the authenticated user's profile, including their role and any venues they manage.
+
+---
+
+**Authentication**
+
+**Required:** Yes
+**Type:** Bearer Token (JWT)
+
+Header format:
+
+```
+Authorization: Bearer <your_jwt_token>
+```
+
+**Response Schema**
+
+```
+{
+  "userId": number,
+  "email": string,
+  "role": "user" | "manager" | "admin",
+  "managedVenues": string[]
+}
+```
+
+**Field Descriptions**
+
+| Field             | Type     | Description                          |
+| ----------------- | -------- | ------------------------------------ |
+| `userId`        | number   | The authenticated user’s ID         |
+| `email`         | string   | User’s email address                |
+| `role`          | string   | User’s role in the system           |
+| `managedVenues` | string[] | List of venue names the user manages |
+
+---
+
+**Example Request**
+
+```
+GET /api/v1/users/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+---
+
+**Example Successful Response (200)**
+
+```
+{
+  "userId": 3,
+  "email": "manager@example.com",
+  "role": "manager",
+  "managedVenues": [
+    "Student Center",
+    "Science Building"
+  ]
+}
+```
+
+---
+
+**Unauthorized Response (401 — No Token)**
+
+```
+{
+  "error": "Missing token"
+}
+```
+
+---
+
+**Unauthorized Response (401 — Invalid Token)**
+
+```
+{
+  "error": "Invalid token"
+}
+```
