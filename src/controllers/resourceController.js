@@ -37,6 +37,13 @@ exports.createResource = async (req, res, next) => {
       });
     }
 
+    if (capacity < 1) {
+      return res.status(400).json({
+        error: 'BadRequest',
+        message: 'Capacity must be greater than 0.'
+      });
+    }
+
     const { rows } = await pool.query(
       `INSERT INTO resources (venue_id, name, capacity, resource_type, tags)
        VALUES ($1, $2, $3, $4, $5)
