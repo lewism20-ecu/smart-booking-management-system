@@ -1,14 +1,16 @@
-const express = require(`express`);
-const router = express.Router();
-const { getUserProfile } = require('../services/userService.js');
+const userModel = require('../models/userModel');
 
-async function getMe(req, res) {
+exports.getMe = async (req, res, next) => {
   try {
-    const userId = req.user.userId;
-    const profile = await getUserProfile(userId);
-    res.status(200).json(profile);
+    const user = await userModel.findUserById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({
+        error: 'NotFound',
+        message: 'User not found.'
+      });
+    }
+    res.json(user);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
-}
-module.exports = { getMe };
+};
