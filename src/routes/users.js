@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/auth");
-const usersController = require("../controllers/usersController");
+const { getMe } = require("../controllers/usersController");
 
-router.get("/me", auth, usersController.getMe);
+// Any authenticated user can view their own profile
+router.get("/me", auth, getMe);
 
 module.exports = router;
