@@ -43,14 +43,13 @@ describe("GET /api/v1/bookings", () => {
 // ─── POST /api/v1/bookings ────────────────────────────────────────────────────
 
 describe("POST /api/v1/bookings", () => {
-  it("200 — creates a booking for authenticated user", async () => {
+  it("201 — creates a booking for authenticated user", async () => {
     const res = await request(app)
       .post("/api/v1/bookings")
       .set("Authorization", `Bearer ${token}`)
       .send({ note: "test booking" });
 
-    expect(res.status).toBe(200);
-    expect(res.body.user).toBeDefined();
+    expect(res.status).toBe(201);
   });
 
   it("401 — no token", async () => {

@@ -51,6 +51,15 @@ jobs:
           DB_USER: postgres
           DB_PASSWORD: postgres
 
+      - name: Seed test data
+        run: npm run add-test-data
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: sbms_test
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+
       - name: Run tests
         run: npm test
         env:
