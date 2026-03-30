@@ -8,8 +8,6 @@ services:
       POSTGRES_DB: sbms
       POSTGRES_USER: sbms_user
       POSTGRES_PASSWORD: LocalPass123!
-    ports:
-      - "5432:5432"
     volumes:
       - sbms_data:/var/lib/postgresql/data
     healthcheck:
