@@ -196,3 +196,109 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
   "error": "Invalid token"
 }
 ```
+
+### **GET /bookings**
+
+Returns all bookings belonging to the authenticated user.
+This endpoint requires a valid JWT and will only return bookings for the user associated with the token.
+
+**Authentication**
+Required: Yes
+Type: Bearer Token (JWT)
+Header format:
+Authorization: Bearer <your_jwt_token>
+
+**Response Schema**
+
+```
+{
+  "bookings": [
+    {
+      "booking_id": number,
+      "resource_id": number,
+      "resource_name": string,
+      "venue_id": number,
+      "start_time": string,
+      "end_time": string,
+      "status": "pending" | "approved" | "rejected",
+      "created_at": string
+    }
+  ]
+}
+```
+
+**Field Descriptions**
+
+| Field | Type | Description |
+|-------|-------|-------------|
+| `booking_id` | number | Unique ID of the booking |
+| `resource_id` | number | ID of the resource that was booked |
+| `resource_name` | string | Human‑readable name of the resource (joined from `resources`) |
+| `venue_id` | number | ID of the venue the resource belongs to |
+| `start_time` | string (ISO timestamp) | When the booking begins |
+| `end_time` | string (ISO timestamp) | When the booking ends |
+| `status` | string | Current booking status (`pending`, `approved`, `rejected`) |
+| `created_at` | string (ISO timestamp) | Timestamp when the booking was created |
+
+
+**Example Request**
+GET /api/v1/bookings
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+**Example Successful Response (200)**
+Example for Alice, who has 3 seeded bookings:
+
+```
+{
+  "bookings": [
+    {
+      "booking_id": 1,
+      "resource_id": 3,
+      "resource_name": "Desk A1",
+      "venue_id": 1,
+      "start_time": "2026-03-31T14:00:00.000Z",
+      "end_time": "2026-03-31T15:00:00.000Z",
+      "status": "approved",
+      "created_at": "2026-03-29T10:22:00.000Z"
+    },
+    {
+      "booking_id": 3,
+      "resource_id": 5,
+      "resource_name": "Conference Room",
+      "venue_id": 2,
+      "start_time": "2026-04-02T14:00:00.000Z",
+      "end_time": "2026-04-02T17:00:00.000Z",
+      "status": "approved",
+      "created_at": "2026-03-29T10:22:00.000Z"
+    },
+    {
+      "booking_id": 5,
+      "resource_id": 3,
+      "resource_name": "Desk A1",
+      "venue_id": 1,
+      "start_time": "2026-03-23T14:00:00.000Z",
+      "end_time": "2026-03-23T15:00:00.000Z",
+      "status": "approved",
+      "created_at": "2026-03-29T10:22:00.000Z"
+    }
+  ]
+}
+```
+
+(Your timestamps will differ based on NOW() in the seed script.)
+
+**Unauthorized Response (401 — No Token)**
+
+```
+{
+  "error": "Missing token"
+}
+```
+
+**Unauthorized Response (401 — Invalid Token)**
+
+```
+{
+  "error": "Invalid token"
+}
+```

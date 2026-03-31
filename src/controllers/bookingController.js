@@ -1,4 +1,5 @@
 const { resourceExists, hasOverlap, createBooking } = require("../services/bookingService");
+const { getBookingsForUser } = require("../services/bookingService");
 
 async function createBookingController(req, res) {
   try {
@@ -46,4 +47,17 @@ async function createBookingController(req, res) {
   }
 }
 
-module.exports = { createBookingController };
+async function getBookings(req, res) {
+  try {
+    const userId = req.user.userId;
+    const bookings = await getBookingsForUser(userId);
+    res.status(200).json({ bookings });
+  } catch (err) {
+    console.error("Error fetching bookings:", err);
+    res.status(500).json({ error: "Failed to fetch bookings" });
+  }
+}
+
+
+
+module.exports = { createBookingController, getBookings };
