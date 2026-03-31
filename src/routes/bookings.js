@@ -1,11 +1,11 @@
 const router      = require('express').Router();
 const auth        = require('../middleware/auth');
 const requireRole = require('../middleware/roleAuth');
-const { getBookings } = require("../controllers/bookingController");
+const { getBookings, postBooking } = require("../controllers/bookingController");
 
 // Any authenticated user can view and create bookings
 router.get('/', auth, getBookings);
-router.post('/',   auth, (req, res) => res.status(201).json({ message: 'Booking logic coming soon' }));
+router.post('/', auth, postBooking);
 
 // Only the booking owner can modify or cancel
 router.patch('/:id',  auth, (req, res) => res.json({ message: 'Modify booking coming soon' }));
