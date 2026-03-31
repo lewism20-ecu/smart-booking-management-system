@@ -1,6 +1,3 @@
-// Model unit tests
-// These test validation logic that does not require a DB connection
-
 const resourceModel = require('../src/models/resourceModel');
 const bookingModel  = require('../src/models/bookingModel');
 const userModel     = require('../src/models/userModel');
@@ -20,11 +17,23 @@ describe('resourceModel — schema constraint validation', () => {
     });
   });
 
-  it('rejects capacity less than 1 without hitting DB', async () => {
+  it('rejects capacity of 0', async () => {
     await expect(
       resourceModel.createResource({
         venueId: 1, name: 'Test', capacity: 0,
         resourceType: 'room'
+      })
+    ).rejects.toMatchObject({
+      status: 400,
+      message: 'Capacity must be greater than 0.'
+    });
+  });
+
+  it('rejects negative capacity', async () => {
+    await expect(
+      resourceModel.createResource({
+        venueId: 1, name: 'Test', capacity: -5,
+        resourceType: 'desk'
       })
     ).rejects.toMatchObject({
       status: 400,
@@ -39,10 +48,51 @@ describe('resourceModel — schema constraint validation', () => {
     expect(resourceModel.VALID_TYPES).toHaveLength(4);
   });
 
+
 });
 
 // ── bookingModel ──────────────────────────────────────────────────────────
-describe('bookingModel — schema constraint validation', () => {
+describe('bookingModel — timestamp validation', () => {
+
+  it('rejects invalid startTime string', async () => {
+    await expect(
+      bookingModel.createBooking(1, 1, 'not-a-date', '2026-04-01T12:00:00Z', false)
+    ).rejects.toMatchObject({
+      status: 400,
+      message: 'startTime is not a valid date.'
+    });
+  });
+
+  it('rejects invalid endTime string', async () => {
+    await expect(
+      bookingModel.createBooking(1, 1, '2026-04-01T10:00:00Z', 'not-a-date', false)
+    ).rejects.toMatchObject({
+      status: 400,
+      message: 'endTime is not a valid date.'
+    });
+  });
+
+  it('rejects both timestamps invalid', async () => {
+    await expect(
+      bookingModel.createBooking(1, 1, 'bad', 'also-bad', false)
+    ).rejects.toMatchObject({
+      status: 400,
+      message: 'startTime is not a valid date.'
+    });
+  });
+
+  it('rejects empty string timestamps', async () => {
+    await expect(
+      bookingModel.createBooking(1, 1, '', '', false)
+    ).rejects.toMatchObject({
+      status: 400,
+      message: 'startTime is not a valid date.'
+    });
+  });
+
+});
+
+describe('bookingModel — time range validation', () => {
 
   it('rejects booking where startTime equals endTime', async () => {
     const time = '2026-04-01T10:00:00Z';
@@ -68,6 +118,23 @@ describe('bookingModel — schema constraint validation', () => {
     });
   });
 
+  it('accepts valid time range — passes through to DB check', async () => {
+    // Valid times pass all pre-DB validation
+    // Will throw a DB connection error in test env, not a 400
+    await expect(
+      bookingModel.createBooking(
+        1, 1,
+        '2026-04-01T10:00:00Z',
+        '2026-04-01T12:00:00Z',
+        false
+      )
+    ).rejects.not.toMatchObject({ status: 400 });
+  });
+
+});
+
+describe('bookingModel — status validation', () => {
+
   it('rejects invalid status in updateBookingStatus', async () => {
     await expect(
       bookingModel.updateBookingStatus(1, 'invalid_status')
@@ -77,10 +144,39 @@ describe('bookingModel — schema constraint validation', () => {
     });
   });
 
+  it('rejects pending as a status update value', async () => {
+    // pending is the initial state — cannot be set via updateBookingStatus
+    await expect(
+      bookingModel.updateBookingStatus(1, 'pending')
+    ).rejects.toMatchObject({
+      status: 400,
+      message: expect.stringContaining('Invalid status')
+    });
+  });
+
+  it('accepts approved as valid status', async () => {
+    // Passes validation — will fail at DB level in test env
+    await expect(
+      bookingModel.updateBookingStatus(1, 'approved')
+    ).rejects.not.toMatchObject({ status: 400 });
+  });
+
+  it('accepts rejected as valid status', async () => {
+    await expect(
+      bookingModel.updateBookingStatus(1, 'rejected')
+    ).rejects.not.toMatchObject({ status: 400 });
+  });
+
+  it('accepts cancelled as valid status', async () => {
+    await expect(
+      bookingModel.updateBookingStatus(1, 'cancelled')
+    ).rejects.not.toMatchObject({ status: 400 });
+  });
+
 });
 
 // ── userModel ─────────────────────────────────────────────────────────────
-describe('userModel — schema constraint validation', () => {
+describe('userModel — role validation', () => {
 
   it('rejects invalid role in updateUserRole', async () => {
     await expect(
@@ -89,6 +185,33 @@ describe('userModel — schema constraint validation', () => {
       status: 400,
       message: expect.stringContaining('Invalid role')
     });
+  });
+
+  it('rejects empty string role', async () => {
+    await expect(
+      userModel.updateUserRole(1, '')
+    ).rejects.toMatchObject({
+      status: 400,
+      message: expect.stringContaining('Invalid role')
+    });
+  });
+
+  it('accepts user as valid role', async () => {
+    await expect(
+      userModel.updateUserRole(1, 'user')
+    ).rejects.not.toMatchObject({ status: 400 });
+  });
+
+  it('accepts manager as valid role', async () => {
+    await expect(
+      userModel.updateUserRole(1, 'manager')
+    ).rejects.not.toMatchObject({ status: 400 });
+  });
+
+  it('accepts admin as valid role', async () => {
+    await expect(
+      userModel.updateUserRole(1, 'admin')
+    ).rejects.not.toMatchObject({ status: 400 });
   });
 
 });

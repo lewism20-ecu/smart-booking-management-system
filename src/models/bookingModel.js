@@ -24,6 +24,22 @@ async function hasConflict(resourceId, startTime, endTime,
 }
 
 /**
+ * Validate that a timestamp string is parseable
+ * @param {string} value
+ * @param {string} fieldName
+ * @throws {Error} 400 if not a valid date
+ */
+function validateTimestamp(value, fieldName) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    const err = new Error(`${fieldName} is not a valid date.`);
+    err.status = 400;
+    throw err;
+  }
+  return date;
+}
+
+/**
  * Create a new booking
  * @param {number} userId
  * @param {number} resourceId
@@ -31,12 +47,16 @@ async function hasConflict(resourceId, startTime, endTime,
  * @param {string} endTime
  * @param {boolean} approvalRequired
  * @returns {Promise<Object>} Created booking
+ * @throws {Error} 400 if times are invalid
  * @throws {Error} 409 if time slot is already booked
  */
 async function createBooking(userId, resourceId,
                               startTime, endTime,
                               approvalRequired = false) {
-  if (new Date(startTime) >= new Date(endTime)) {
+  const start = validateTimestamp(startTime, 'startTime');
+  const end   = validateTimestamp(endTime, 'endTime');
+
+  if (start >= end) {
     const err = new Error('startTime must be before endTime.');
     err.status = 400;
     throw err;
@@ -100,6 +120,9 @@ async function findBookingById(bookingId) {
  * @param {string} startTime
  * @param {string} endTime
  * @returns {Promise<Object>} Updated booking
+ * @throws {Error} 400 if times are invalid
+ * @throws {Error} 404 if booking not found
+ * @throws {Error} 409 if time slot is already booked
  */
 async function rescheduleBooking(bookingId, startTime, endTime) {
   const booking = await findBookingById(bookingId);
@@ -109,7 +132,10 @@ async function rescheduleBooking(bookingId, startTime, endTime) {
     throw err;
   }
 
-  if (new Date(startTime) >= new Date(endTime)) {
+  const start = validateTimestamp(startTime, 'startTime');
+  const end   = validateTimestamp(endTime, 'endTime');
+
+  if (start >= end) {
     const err = new Error('startTime must be before endTime.');
     err.status = 400;
     throw err;
@@ -143,6 +169,8 @@ async function rescheduleBooking(bookingId, startTime, endTime) {
  * @param {number} bookingId
  * @param {string} status - 'approved'|'rejected'|'cancelled'
  * @returns {Promise<Object>} Updated booking
+ * @throws {Error} 400 if status is invalid
+ * @throws {Error} 404 if booking not found
  */
 async function updateBookingStatus(bookingId, status) {
   const validStatuses = ['approved', 'rejected', 'cancelled'];
