@@ -1,7 +1,7 @@
 const { resourceExists, hasOverlap, createBooking } = require("../services/bookingService");
 const { getBookingsForUser } = require("../services/bookingService");
 
-async function createBookingController(req, res) {
+async function postBooking(req, res) {
   try {
     const userId = req.user.userId;
     const { resourceId, startTime, endTime } = req.body;
@@ -60,4 +60,4 @@ async function getBookings(req, res) {
 
 
 
-module.exports = { createBookingController, getBookings };
+module.exports = { postBooking, getBookings };

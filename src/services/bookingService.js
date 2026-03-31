@@ -2,7 +2,7 @@ const { pool } = require("../db/index");
 
 async function resourceExists(resourceId) {
     const result = await pool.query(
-        `SELECT resource_id, approval_required FROM resources WHERE resource_id = $1`
+        `SELECT resource_id, approval_required FROM resources WHERE resource_id = $1`,
         [resourceId]
     );
     return result.rows[0] || null;
