@@ -4,7 +4,7 @@ const requireRole = require('../middleware/roleAuth');
 
 // Any authenticated user can view and create bookings
 router.get('/',    auth, (req, res) => res.json([]));
-router.post('/',   auth, (req, res) => res.status(201).json({ message: 'Booking logic coming soon' }));
+router.post('/', auth, getBookingController);
 
 // Only the booking owner can modify or cancel
 router.patch('/:id',  auth, (req, res) => res.json({ message: 'Modify booking coming soon' }));
