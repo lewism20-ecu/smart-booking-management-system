@@ -125,19 +125,20 @@ async function findBookingById(bookingId) {
  * @throws {Error} 409 if time slot is already booked
  */
 async function rescheduleBooking(bookingId, startTime, endTime) {
-  const booking = await findBookingById(bookingId);
-  if (!booking) {
-    const err = new Error('Booking not found.');
-    err.status = 404;
-    throw err;
-  }
-
+  // Validate timestamps before hitting the DB
   const start = validateTimestamp(startTime, 'startTime');
   const end   = validateTimestamp(endTime, 'endTime');
 
   if (start >= end) {
     const err = new Error('startTime must be before endTime.');
     err.status = 400;
+    throw err;
+  }
+
+  const booking = await findBookingById(bookingId);
+  if (!booking) {
+    const err = new Error('Booking not found.');
+    err.status = 404;
     throw err;
   }
 

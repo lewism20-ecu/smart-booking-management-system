@@ -215,3 +215,38 @@ describe('userModel — role validation', () => {
   });
 
 });
+
+describe('bookingModel — rescheduleBooking timestamp validation', () => {
+
+  it('rejects invalid startTime in rescheduleBooking', async () => {
+    await expect(
+      bookingModel.rescheduleBooking(1, 'not-a-date', '2026-04-01T12:00:00Z')
+    ).rejects.toMatchObject({
+      status: 400,
+      message: 'startTime is not a valid date.'
+    });
+  });
+
+  it('rejects invalid endTime in rescheduleBooking', async () => {
+    await expect(
+      bookingModel.rescheduleBooking(1, '2026-04-01T10:00:00Z', 'not-a-date')
+    ).rejects.toMatchObject({
+      status: 400,
+      message: 'endTime is not a valid date.'
+    });
+  });
+
+  it('rejects startTime after endTime in rescheduleBooking', async () => {
+    await expect(
+      bookingModel.rescheduleBooking(
+        1,
+        '2026-04-01T12:00:00Z',
+        '2026-04-01T10:00:00Z'
+      )
+    ).rejects.toMatchObject({
+      status: 400,
+      message: 'startTime must be before endTime.'
+    });
+  });
+
+});
