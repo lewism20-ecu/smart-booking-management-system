@@ -14,7 +14,7 @@
     "migrate": "node src/db/migrate.js",
     "add-test-data": "node src/db/add-test-data.js",
     "setup-db": "node src/db/db-setup.js",
-    "seed": "node src/db/seed.js"
+    "seed": "node src/db/db-setup.js"
   },
   "repository": {
     "type": "git",
