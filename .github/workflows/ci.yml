@@ -2,63 +2,30 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-      - dev
+    branches: [main, dev, 17-database-models-users-venues-resources-bookings]
   pull_request:
-    branches:
-      - main
-      - dev
+    branches: [main, dev]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_DB: sbms_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
-          cache: "npm"
+          node-version: '20'
+          cache: 'npm'
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Run database migrations
-        run: npm run migrate
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_NAME: sbms_test
-          DB_USER: postgres
-          DB_PASSWORD: postgres
-
-      - name: Seed test data
-        run: npm run add-test-data
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_NAME: sbms_test
-          DB_USER: postgres
-          DB_PASSWORD: postgres
 
       - name: Run tests
         run: npm test
@@ -68,7 +35,7 @@ jobs:
           DB_NAME: sbms_test
           DB_USER: postgres
           DB_PASSWORD: postgres
-          JWT_SECRET: test_secret_for_ci_only
+          JWT_SECRET: test_secret
           NODE_ENV: test
           PORT: 8080
 
@@ -79,6 +46,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - name: Build Docker image
         run: docker build -t sbms:latest .
