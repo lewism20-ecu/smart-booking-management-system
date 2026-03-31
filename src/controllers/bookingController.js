@@ -1,6 +1,16 @@
-const bookingModel = require('../models/bookingModel');
-const venueModel   = require('../models/venueModel');
+const bookingModel  = require('../models/bookingModel');
+const venueModel    = require('../models/venueModel');
 const resourceModel = require('../models/resourceModel');
+
+/**
+ * Parse and validate a route param as a positive integer
+ * @param {string} value
+ * @returns {number|null} Parsed integer or null if invalid
+ */
+function parseId(value) {
+  const id = parseInt(value, 10);
+  return Number.isNaN(id) || id < 1 ? null : id;
+}
 
 /**
  * GET /bookings
@@ -65,7 +75,13 @@ exports.createBooking = async (req, res, next) => {
  */
 exports.updateBooking = async (req, res, next) => {
   try {
-    const bookingId = parseInt(req.params.id);
+    const bookingId = parseId(req.params.id);
+    if (!bookingId) {
+      return res.status(400).json({
+        error: 'BadRequest',
+        message: 'Booking ID must be a positive integer.'
+      });
+    }
     const { startTime, endTime } = req.body;
 
     if (!startTime || !endTime) {
@@ -112,7 +128,13 @@ exports.updateBooking = async (req, res, next) => {
  */
 exports.cancelBooking = async (req, res, next) => {
   try {
-    const bookingId = parseInt(req.params.id);
+    const bookingId = parseId(req.params.id);
+    if (!bookingId) {
+      return res.status(400).json({
+        error: 'BadRequest',
+        message: 'Booking ID must be a positive integer.'
+      });
+    }
 
     const existing = await bookingModel.findBookingById(bookingId);
     if (!existing) {
@@ -143,7 +165,13 @@ exports.cancelBooking = async (req, res, next) => {
  */
 exports.approveBooking = async (req, res, next) => {
   try {
-    const bookingId = parseInt(req.params.id);
+    const bookingId = parseId(req.params.id);
+    if (!bookingId) {
+      return res.status(400).json({
+        error: 'BadRequest',
+        message: 'Booking ID must be a positive integer.'
+      });
+    }
 
     // Find the booking
     const booking = await bookingModel.findBookingById(bookingId);
@@ -194,7 +222,13 @@ exports.approveBooking = async (req, res, next) => {
  */
 exports.rejectBooking = async (req, res, next) => {
   try {
-    const bookingId = parseInt(req.params.id);
+    const bookingId = parseId(req.params.id);
+    if (!bookingId) {
+      return res.status(400).json({
+        error: 'BadRequest',
+        message: 'Booking ID must be a positive integer.'
+      });
+    }
 
     // Find the booking
     const booking = await bookingModel.findBookingById(bookingId);

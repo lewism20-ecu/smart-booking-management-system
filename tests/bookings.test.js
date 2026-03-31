@@ -128,3 +128,56 @@ describe('PATCH /bookings/:id — input validation', () => {
     expect(res.body.error).toBe('BadRequest');
   });
 });
+
+// ── Invalid ID validation ─────────────────────────────────────────────────
+describe('Booking ID param validation', () => {
+
+  it('PATCH /bookings/abc → 400 invalid ID', async () => {
+    const res = await request(app)
+      .patch('/api/v1/bookings/abc')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({
+        startTime: '2026-04-01T10:00:00Z',
+        endTime:   '2026-04-01T12:00:00Z'
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('BadRequest');
+  });
+
+  it('DELETE /bookings/abc → 400 invalid ID', async () => {
+    const res = await request(app)
+      .delete('/api/v1/bookings/abc')
+      .set('Authorization', `Bearer ${userToken}`);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('BadRequest');
+  });
+
+  it('POST /bookings/abc/approve → 400 invalid ID', async () => {
+    const res = await request(app)
+      .post('/api/v1/bookings/abc/approve')
+      .set('Authorization', `Bearer ${managerToken}`);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('BadRequest');
+  });
+
+  it('POST /bookings/abc/reject → 400 invalid ID', async () => {
+    const res = await request(app)
+      .post('/api/v1/bookings/abc/reject')
+      .set('Authorization', `Bearer ${managerToken}`);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('BadRequest');
+  });
+
+  it('PATCH /bookings/0 → 400 non-positive ID', async () => {
+    const res = await request(app)
+      .patch('/api/v1/bookings/0')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({
+        startTime: '2026-04-01T10:00:00Z',
+        endTime:   '2026-04-01T12:00:00Z'
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('BadRequest');
+  });
+
+});
