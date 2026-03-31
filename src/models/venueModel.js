@@ -50,7 +50,7 @@ async function createVenue(name, approvalRequired = false, creatorUserId) {
  */
 async function getAllVenues() {
   const { rows } = await pool.query(
-    `SELECT v.*, array_agg(vm.user_id) AS manager_ids
+    `SELECT v.*, COALESCE(array_agg(vm.user_id) FILTER (WHERE vm.user_id IS NOT NULL), '{}') AS manager_ids
      FROM venues v
      LEFT JOIN venue_managers vm ON vm.venue_id = v.venue_id
      GROUP BY v.venue_id
@@ -66,7 +66,7 @@ async function getAllVenues() {
  */
 async function findVenueById(venueId) {
   const { rows } = await pool.query(
-    `SELECT v.*, array_agg(vm.user_id) AS manager_ids
+    `SELECT v.*, COALESCE(array_agg(vm.user_id) FILTER (WHERE vm.user_id IS NOT NULL), '{}') AS manager_ids
      FROM venues v
      LEFT JOIN venue_managers vm ON vm.venue_id = v.venue_id
      WHERE v.venue_id = $1
