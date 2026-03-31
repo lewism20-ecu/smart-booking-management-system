@@ -1,14 +1,14 @@
-exports.listUserBookings = (req, res) => {
-  res.json({
-    message: "bookingController.listUserBookings is working",
-    user: req.user
-  });
-};
+const { getBookingsForUser } = require("../services/bookingService");
 
-exports.createBooking = (req, res) => {
-  res.json({
-    message: "bookingController.createBooking is working",
-    body: req.body,
-    user: req.user
-  });
-};
+async function getBookings(req, res) {
+  try {
+    const userId = req.user.userId;
+    const bookings = await getBookingsForUser(userId);
+    res.status(200).json({ bookings });
+  } catch (err) {
+    console.error("Error fetching bookings:", err);
+    res.status(500).json({ error: "Failed to fetch bookings" });
+  }
+}
+
+module.exports = { getBookings };
