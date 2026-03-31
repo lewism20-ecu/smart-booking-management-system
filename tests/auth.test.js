@@ -1,3 +1,6 @@
+// Set JWT_SECRET before app loads so verifyToken() picks it up
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_secret';
+
 const request = require('supertest');
 const app     = require('../src/index');
 
