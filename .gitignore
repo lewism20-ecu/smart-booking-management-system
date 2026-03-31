@@ -69,6 +69,7 @@ web_modules/
 .env
 .env.*
 !.env.example
+!.env.cloudsql.example
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -145,3 +146,4 @@ package-lock.json
 package.json
 
 .idea
+cloud-sql-proxy
