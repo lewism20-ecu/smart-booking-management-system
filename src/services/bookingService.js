@@ -1,4 +1,4 @@
-const pool = require("../db/index");
+const  { pool } = require("../db/index");
 
 async function getBookingsForUser(userId) {
     const result = await pool.query(
@@ -21,4 +21,4 @@ async function getBookingsForUser(userId) {
     return result.rows;
 }
 
-module.exports = { getBooksForUser };
+module.exports = { getBookingsForUser };
