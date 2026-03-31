@@ -302,3 +302,105 @@ Example for Alice, who has 3 seeded bookings:
   "error": "Invalid token"
 }
 ```
+
+### **POST /bookings**
+
+Creates a new booking for the authenticated user.  
+This endpoint validates the time window, checks resource availability, prevents overlapping bookings, and applies approval rules based on the resource.
+
+---
+**Authentication**
+**Required:** Yes  
+**Type:** Bearer Token (JWT)
+
+---
+
+**Validation Rules**
+
+**Required fields**
+- `resourceId` (number)
+- `startTime` (ISO timestamp)
+- `endTime` (ISO timestamp)
+
+**Business rules**
+| Rule | Description |
+|------|-------------|
+| **startTime < endTime** | If not, return **400 Bad Request** |
+| **Resource must exist** | If not found, return **404 Not Found** |
+| **No overlapping bookings** | If overlap detected, return **409 Conflict** |
+| **Approval logic** | If resource.approval_required = true → status = `"pending"`; otherwise `"approved"` |
+
+---
+
+**Request Body Schema**
+
+```json
+{
+  "resourceId": number,
+  "startTime": "ISO-8601 timestamp",
+  "endTime": "ISO-8601 timestamp"
+}
+```
+
+---
+
+**Example Request**
+
+```
+POST /api/v1/bookings
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "resourceId": 3,
+  "startTime": "2030-01-01T10:00:00.000Z",
+  "endTime": "2030-01-01T11:00:00.000Z"
+}
+```
+
+---
+
+**201 Created — Successful Booking**
+
+```json
+{
+  "booking_id": 12,
+  "status": "approved"
+}
+```
+
+*(If the resource requires approval, status will be `"pending"` instead.)*
+
+---
+
+**400 Bad Request — Invalid Time Window**
+
+```json
+{
+  "error": "startTime must be before endTime"
+}
+```
+
+---
+
+**404 Not Found — Resource Does Not Exist**
+
+```json
+{
+  "error": "Resource not found"
+}
+```
+
+---
+
+**409 Conflict — Overlapping Booking**
+
+```json
+{
+  "error": "Resource already booked for this time window"
+}
+```
+
+
