@@ -3,18 +3,33 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_secret';
 
 const request = require("supertest");
 const app     = require("../src/index");
-const jwt     = require("jsonwebtoken");
+const { pool } = require("../src/db/index");
 
-const secret = process.env.JWT_SECRET;
+let token;
 
-const userToken = jwt.sign(
-  { userId: 1, role: 'user' },
-  secret,
-  { expiresIn: '1h' }
-);
+beforeAll(async () => {
+  const res = await request(app)
+    .post("/api/v1/auth/login")
+    .send({ email: "alice@example.com", password: "User123!" });
+  token = res.body.token;
+});
+
+afterAll(async () => {
+  await pool.end();
+});
 
 // ── GET /api/v1/users/me ──────────────────────────────────────────────────
 describe("GET /api/v1/users/me", () => {
+
+  it("200 — returns the authenticated user profile", async () => {
+    const res = await request(app)
+      .get("/api/v1/users/me")
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.email).toBe("alice@example.com");
+    expect(res.body.role).toBeDefined();
+    expect(Array.isArray(res.body.managed_venues)).toBe(true);
+  });
 
   it("401 — no token", async () => {
     const res = await request(app).get("/api/v1/users/me");
@@ -33,17 +48,6 @@ describe("GET /api/v1/users/me", () => {
       .get("/api/v1/users/me")
       .set("Authorization", "NotBearer token");
     expect(res.status).toBe(401);
-  });
-
-  it("token accepted by auth middleware — returns 404 or 500 (no DB in test env)", async () => {
-    const res = await request(app)
-      .get("/api/v1/users/me")
-      .set("Authorization", `Bearer ${userToken}`);
-    // Auth middleware passed — DB unavailable in test env
-    // must never be 401 (bad token) or 403 (wrong role)
-    expect(res.status).not.toBe(401);
-    expect(res.status).not.toBe(403);
-    expect([404, 500]).toContain(res.status);
   });
 
 });

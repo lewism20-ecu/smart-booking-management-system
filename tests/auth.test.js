@@ -137,13 +137,12 @@ describe('Role-based authorization middleware', () => {
   });
 
   // User-only validation: authenticated users can reach user routes
-  it('GET /users/me with valid user token → auth passes, returns 404 or 500 (no DB in test)', async () => {
+  it('GET /users/me with valid user token → auth passes, not 401 or 403', async () => {
     const res = await request(app)
         .get('/api/v1/users/me')
         .set('Authorization', `Bearer ${userToken}`);
     expect(res.status).not.toBe(401);
     expect(res.status).not.toBe(403);
-    expect([404, 500]).toContain(res.status);
   });
 
 });
