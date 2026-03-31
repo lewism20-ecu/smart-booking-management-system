@@ -47,7 +47,9 @@ describe("POST /api/v1/bookings", () => {
     const res = await request(app)
       .post("/api/v1/bookings")
       .set("Authorization", `Bearer ${token}`)
-      .send({ note: "test booking" });
+      .send({"resourceId": 3,
+            "startTime": "2050-01-01T10:00:00.000Z",
+            "endTime": "2050-01-01T11:00:00.000Z"});
 
     expect(res.status).toBe(201);
   });
