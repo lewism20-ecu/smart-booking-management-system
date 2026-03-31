@@ -1,0 +1,127 @@
+name: Deploy to Cloud Run (Cloud SQL)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "What to run"
+        required: true
+        default: "both"
+        type: choice
+        options:
+          - both
+          - migrate-only
+          - deploy-only
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION }}
+  SERVICE_NAME: ${{ secrets.GCP_SERVICE_NAME }}
+  ARTIFACT_REPO: ${{ secrets.GCP_ARTIFACT_REPO }}
+  INSTANCE_CONNECTION_NAME: ${{ secrets.GCP_CLOUDSQL_INSTANCE }}
+  DB_NAME: ${{ secrets.GCP_DB_NAME }}
+  DB_USER: ${{ secrets.GCP_DB_USER }}
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    if: ${{ inputs.target == 'both' || inputs.target == 'migrate-only' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start Cloud SQL Auth Proxy
+        run: |
+          curl -fsSL -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.14.3/cloud-sql-proxy.linux.amd64
+          chmod +x cloud-sql-proxy
+          ./cloud-sql-proxy --port 5432 "$INSTANCE_CONNECTION_NAME" > proxy.log 2>&1 &
+          sleep 5
+
+      - name: Run migrations
+        run: npm run migrate
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_NAME: ${{ env.DB_NAME }}
+          DB_USER: ${{ env.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_SSL: false
+
+      - name: Show proxy logs on failure
+        if: failure()
+        run: cat proxy.log
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [migrate]
+    # always() prevents auto-skip when migrate is skipped (deploy-only mode).
+    # The condition then whitelists: deploy-only (migrate was skipped) or
+    # both (migrate succeeded).
+    if: |
+      always() && (
+        inputs.target == 'deploy-only' ||
+        (inputs.target == 'both' && needs.migrate.result == 'success')
+      )
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker auth
+        run: gcloud auth configure-docker "${{ env.REGION }}-docker.pkg.dev" --quiet
+
+      - name: Build and push image
+        run: |
+          IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPO }}/sbms:${{ github.sha }}"
+          docker build -t "$IMAGE_URI" .
+          docker push "$IMAGE_URI"
+          echo "IMAGE_URI=$IMAGE_URI" >> "$GITHUB_ENV"
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "${{ env.SERVICE_NAME }}" \
+            --image "$IMAGE_URI" \
+            --region "${{ env.REGION }}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080 \
+            --add-cloudsql-instances "${{ env.INSTANCE_CONNECTION_NAME }}" \
+            --set-env-vars "NODE_ENV=production,PORT=8080,DB_HOST=/cloudsql/${{ env.INSTANCE_CONNECTION_NAME }},DB_PORT=5432,DB_NAME=${{ env.DB_NAME }},DB_USER=${{ env.DB_USER }},DB_SSL=false" \
+            --set-secrets "DB_PASSWORD=DB_PASSWORD:latest,JWT_SECRET=JWT_SECRET:latest"
+
+      - name: Output service URL
+        run: |
+          URL=$(gcloud run services describe "${{ env.SERVICE_NAME }}" --region "${{ env.REGION }}" --format='value(status.url)')
+          echo "Service URL: $URL"

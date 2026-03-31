@@ -1,4 +1,4 @@
-require("dotenv").config({ path: ".env.local" });
+require("dotenv").config({ path: process.env.ENV_FILE || ".env.local" });
 const { pool } = require("./index");
 const { runMigrations } = require("./migrate");
 const { addTestData } = require("./add-test-data");

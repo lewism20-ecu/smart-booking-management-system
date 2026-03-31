@@ -1,5 +1,23 @@
-require("dotenv").config({ path: ".env.local" });
+require("dotenv").config({ path: process.env.ENV_FILE || ".env.local" });
+require("dotenv").config();
 const { Pool } = require("pg");
+
+function getSslConfig() {
+  const sslMode = (process.env.DB_SSL || "").toLowerCase();
+
+  if (sslMode === "false" || sslMode === "disable" || sslMode === "off") {
+    return false;
+  }
+
+  if (sslMode === "true" || sslMode === "require" || sslMode === "on") {
+    return { rejectUnauthorized: false };
+  }
+
+  // Keep current behavior unless DB_SSL is explicitly set.
+  return process.env.NODE_ENV === "production"
+    ? { rejectUnauthorized: false }
+    : false;
+}
 
 const pool = new Pool({
   host: process.env.DB_HOST,
@@ -7,10 +25,7 @@ const pool = new Pool({
   database: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  ssl:
-    process.env.NODE_ENV === "production"
-      ? { rejectUnauthorized: false }
-      : false,
+  ssl: getSslConfig(),
 });
 
 module.exports = { pool };
