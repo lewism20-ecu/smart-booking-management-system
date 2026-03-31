@@ -136,14 +136,14 @@ describe('Role-based authorization middleware', () => {
     expect(res.status).not.toBe(403);
   });
 
-// User-only validation: authenticated users can reach user routes
-  it('GET /users/me with valid user token → not 401 or 403', async () => {
+  // User-only validation: authenticated users can reach user routes
+  it('GET /users/me with valid user token → auth passes, returns 404 or 500 (no DB in test)', async () => {
     const res = await request(app)
         .get('/api/v1/users/me')
         .set('Authorization', `Bearer ${userToken}`);
-    // Auth middleware passed — may return 500 if DB unavailable in test env
-    // but must never return 401 or 403
     expect(res.status).not.toBe(401);
     expect(res.status).not.toBe(403);
-  }, 10000);  // ← 10 second timeout for DB connection attempt
+    expect([404, 500]).toContain(res.status);
+  });
+
 });

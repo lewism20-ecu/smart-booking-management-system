@@ -82,22 +82,20 @@ describe('POST /bookings/:id/approve — role checks', () => {
     expect(res.body.error).toBe('Forbidden');
   });
 
-  it('manager token → passes role check (not 403)', async () => {
+  it('manager token → passes role check, returns 404 for unknown booking', async () => {
     const res = await request(app)
       .post('/api/v1/bookings/999/approve')
       .set('Authorization', `Bearer ${managerToken}`);
-    // Role check passes — will get 404 since booking 999 doesn't exist
-    // but NOT 403
-    expect(res.status).not.toBe(403);
-    expect(res.status).not.toBe(401);
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('NotFound');
   });
 
-  it('admin token → passes role check (not 403)', async () => {
+  it('admin token → passes role check, returns 404 for unknown booking', async () => {
     const res = await request(app)
       .post('/api/v1/bookings/999/approve')
       .set('Authorization', `Bearer ${adminToken}`);
-    expect(res.status).not.toBe(403);
-    expect(res.status).not.toBe(401);
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('NotFound');
   });
 });
 
@@ -111,12 +109,12 @@ describe('POST /bookings/:id/reject — role checks', () => {
     expect(res.body.error).toBe('Forbidden');
   });
 
-  it('manager token → passes role check (not 403)', async () => {
+  it('manager token → passes role check, returns 404 for unknown booking', async () => {
     const res = await request(app)
       .post('/api/v1/bookings/999/reject')
       .set('Authorization', `Bearer ${managerToken}`);
-    expect(res.status).not.toBe(403);
-    expect(res.status).not.toBe(401);
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('NotFound');
   });
 });
 
