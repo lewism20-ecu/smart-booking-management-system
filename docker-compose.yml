@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   db:
@@ -8,11 +8,8 @@ services:
       POSTGRES_DB: sbms
       POSTGRES_USER: sbms_user
       POSTGRES_PASSWORD: LocalPass123!
-    ports:
-      - "5432:5432"
     volumes:
       - sbms_data:/var/lib/postgresql/data
-      - ./src/db/migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sbms_user -d sbms"]
       interval: 10s
@@ -24,18 +21,19 @@ services:
     container_name: sbms-api
     ports:
       - "8080:8080"
-    env_file:
-      - .env
     environment:
       DB_HOST: db
       DB_PORT: 5432
+      DB_USER: sbms_user
+      DB_PASSWORD: LocalPass123!
+      DB_NAME: sbms
       NODE_ENV: development
+      JWT_SECRET: 8f3b1c2e9a7d4f6b0c1d2e3f4a5b6c7d
+      JWT_EXPIRES_IN: 1h
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - .:/app
-      - /app/node_modules
+    command: sh -c "node src/db/db-setup.js && node src/index.js"
 
 volumes:
   sbms_data:
