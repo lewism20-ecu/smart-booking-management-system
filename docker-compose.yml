@@ -2,14 +2,14 @@ version: "3.8"
 
 services:
   db:
-    image: postgres:15-alpine
+    image: postgres:18.3-alpine3.22
     container_name: sbms-db
     environment:
       POSTGRES_DB: sbms
       POSTGRES_USER: sbms_user
       POSTGRES_PASSWORD: LocalPass123!
     volumes:
-      - sbms_data:/var/lib/postgresql/data
+      - sbms_data_v18:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sbms_user -d sbms"]
       interval: 10s
@@ -36,4 +36,4 @@ services:
     command: sh -c "node src/db/db-setup.js && node src/index.js"
 
 volumes:
-  sbms_data:
+  sbms_data_v18:
