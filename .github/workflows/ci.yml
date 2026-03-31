@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, dev, 17-database-models-users-venues-resources-bookings]
+    branches: [main, dev]
   pull_request:
     branches: [main, dev]
 
