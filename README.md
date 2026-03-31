@@ -59,12 +59,46 @@ No Node or Postgres installation required — Docker Desktop is the only depende
 
 ---
 
+## Option 3 — Local API + Cloud SQL (team cloud testing)
+
+Use this when you want to run the API locally but connect to the shared Cloud SQL database.
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Create cloud env file
+cp .env.cloudsql.example .env.cloudsql
+# Edit .env.cloudsql with your assigned DB_USER and DB_PASSWORD
+
+# 3. Install Cloud SQL proxy (one-time)
+make install-proxy
+
+# 4. Terminal 1: start proxy
+make proxy
+
+# 5. Terminal 2: run migrations (optional one-time per schema change)
+make cloud-migrate
+
+# 6. Terminal 2: start API against Cloud SQL
+make cloud-dev
+```
+
+Detailed setup and troubleshooting: see `docs/local-cloud-sql-setup.md`.
+
+---
+
 ## Using Make
 
 ```bash
 make up           # build and start everything
 make down         # stop containers
 make reset        # wipe database and restart fresh
+make install-proxy # install Cloud SQL proxy binary
+make proxy        # start Cloud SQL proxy on 127.0.0.1:5434
+make cloud-migrate # run migrations against Cloud SQL
+make cloud-setup  # alias of cloud-migrate
+make cloud-dev    # run API locally against Cloud SQL
 ```
 
 ---
