@@ -1,11 +1,12 @@
-const bookingModel  = require('../models/bookingModel');
-const venueModel    = require('../models/venueModel');
-const resourceModel = require('../models/resourceModel');
+const bookingModel              = require('../models/bookingModel');
+const venueModel                = require('../models/venueModel');
+const resourceModel             = require('../models/resourceModel');
+const { handleModelError }      = require('../utils/apiError');
 
 /**
  * Parse and validate a route param as a positive integer
  * @param {string} value
- * @returns {number|null} Parsed integer or null if invalid
+ * @returns {number|null}
  */
 function parseId(value) {
   const id = parseInt(value, 10);
@@ -35,16 +36,15 @@ exports.createBooking = async (req, res, next) => {
 
     if (!resourceId || !startTime || !endTime) {
       return res.status(400).json({
-        error: 'BadRequest',
+        error:   'BadRequest',
         message: 'resourceId, startTime, and endTime are required.'
       });
     }
 
-    // Verify the resource exists
     const resource = await resourceModel.findResourceById(resourceId);
     if (!resource) {
       return res.status(404).json({
-        error: 'NotFound',
+        error:   'NotFound',
         message: 'Resource not found.'
       });
     }
@@ -59,13 +59,7 @@ exports.createBooking = async (req, res, next) => {
 
     res.status(201).json(booking);
   } catch (err) {
-    if (err.status) {
-      return res.status(err.status).json({
-        error: err.name || 'Error',
-        message: err.message
-      });
-    }
-    next(err);
+    handleModelError(err, res, next);
   }
 };
 
@@ -78,15 +72,15 @@ exports.updateBooking = async (req, res, next) => {
     const bookingId = parseId(req.params.id);
     if (!bookingId) {
       return res.status(400).json({
-        error: 'BadRequest',
+        error:   'BadRequest',
         message: 'Booking ID must be a positive integer.'
       });
     }
-    const { startTime, endTime } = req.body;
 
+    const { startTime, endTime } = req.body;
     if (!startTime || !endTime) {
       return res.status(400).json({
-        error: 'BadRequest',
+        error:   'BadRequest',
         message: 'startTime and endTime are required.'
       });
     }
@@ -94,15 +88,14 @@ exports.updateBooking = async (req, res, next) => {
     const existing = await bookingModel.findBookingById(bookingId);
     if (!existing) {
       return res.status(404).json({
-        error: 'NotFound',
+        error:   'NotFound',
         message: 'Booking not found.'
       });
     }
 
-    // Only the booking owner can modify
     if (existing.user_id !== req.user.userId) {
       return res.status(403).json({
-        error: 'Forbidden',
+        error:   'Forbidden',
         message: 'You do not have permission to modify this booking.'
       });
     }
@@ -112,13 +105,7 @@ exports.updateBooking = async (req, res, next) => {
     );
     res.json(booking);
   } catch (err) {
-    if (err.status) {
-      return res.status(err.status).json({
-        error: err.name || 'Error',
-        message: err.message
-      });
-    }
-    next(err);
+    handleModelError(err, res, next);
   }
 };
 
@@ -131,7 +118,7 @@ exports.cancelBooking = async (req, res, next) => {
     const bookingId = parseId(req.params.id);
     if (!bookingId) {
       return res.status(400).json({
-        error: 'BadRequest',
+        error:   'BadRequest',
         message: 'Booking ID must be a positive integer.'
       });
     }
@@ -139,14 +126,14 @@ exports.cancelBooking = async (req, res, next) => {
     const existing = await bookingModel.findBookingById(bookingId);
     if (!existing) {
       return res.status(404).json({
-        error: 'NotFound',
+        error:   'NotFound',
         message: 'Booking not found.'
       });
     }
 
     if (existing.user_id !== req.user.userId) {
       return res.status(403).json({
-        error: 'Forbidden',
+        error:   'Forbidden',
         message: 'You do not have permission to cancel this booking.'
       });
     }
@@ -161,54 +148,46 @@ exports.cancelBooking = async (req, res, next) => {
 /**
  * POST /bookings/:id/approve
  * Approves a pending booking — manager/admin only
- * Validates: manager owns the venue, booking is pending
  */
 exports.approveBooking = async (req, res, next) => {
   try {
     const bookingId = parseId(req.params.id);
     if (!bookingId) {
       return res.status(400).json({
-        error: 'BadRequest',
+        error:   'BadRequest',
         message: 'Booking ID must be a positive integer.'
       });
     }
 
-    // Find the booking
     const booking = await bookingModel.findBookingById(bookingId);
     if (!booking) {
       return res.status(404).json({
-        error: 'NotFound',
+        error:   'NotFound',
         message: 'Booking not found.'
       });
     }
 
-    // Booking must be pending
     if (booking.status !== 'pending') {
       return res.status(409).json({
-        error: 'Conflict',
+        error:   'Conflict',
         message: `Booking cannot be approved — current status is '${booking.status}'.`
       });
     }
 
-    // Verify the manager owns the venue this resource belongs to
     if (req.user.role !== 'admin') {
-      const resource = await resourceModel.findResourceById(
-        booking.resource_id
-      );
+      const resource  = await resourceModel.findResourceById(booking.resource_id);
       const isManager = await venueModel.isVenueManager(
         req.user.userId, resource.venue_id
       );
       if (!isManager) {
         return res.status(403).json({
-          error: 'Forbidden',
+          error:   'Forbidden',
           message: 'You are not a manager of the venue for this booking.'
         });
       }
     }
 
-    const updated = await bookingModel.updateBookingStatus(
-      bookingId, 'approved'
-    );
+    const updated = await bookingModel.updateBookingStatus(bookingId, 'approved');
     res.json(updated);
   } catch (err) {
     next(err);
@@ -218,54 +197,46 @@ exports.approveBooking = async (req, res, next) => {
 /**
  * POST /bookings/:id/reject
  * Rejects a pending booking — manager/admin only
- * Validates: manager owns the venue, booking is pending
  */
 exports.rejectBooking = async (req, res, next) => {
   try {
     const bookingId = parseId(req.params.id);
     if (!bookingId) {
       return res.status(400).json({
-        error: 'BadRequest',
+        error:   'BadRequest',
         message: 'Booking ID must be a positive integer.'
       });
     }
 
-    // Find the booking
     const booking = await bookingModel.findBookingById(bookingId);
     if (!booking) {
       return res.status(404).json({
-        error: 'NotFound',
+        error:   'NotFound',
         message: 'Booking not found.'
       });
     }
 
-    // Booking must be pending
     if (booking.status !== 'pending') {
       return res.status(409).json({
-        error: 'Conflict',
+        error:   'Conflict',
         message: `Booking cannot be rejected — current status is '${booking.status}'.`
       });
     }
 
-    // Verify the manager owns the venue this resource belongs to
     if (req.user.role !== 'admin') {
-      const resource = await resourceModel.findResourceById(
-        booking.resource_id
-      );
+      const resource  = await resourceModel.findResourceById(booking.resource_id);
       const isManager = await venueModel.isVenueManager(
         req.user.userId, resource.venue_id
       );
       if (!isManager) {
         return res.status(403).json({
-          error: 'Forbidden',
+          error:   'Forbidden',
           message: 'You are not a manager of the venue for this booking.'
         });
       }
     }
 
-    const updated = await bookingModel.updateBookingStatus(
-      bookingId, 'rejected'
-    );
+    const updated = await bookingModel.updateBookingStatus(bookingId, 'rejected');
     res.json(updated);
   } catch (err) {
     next(err);
