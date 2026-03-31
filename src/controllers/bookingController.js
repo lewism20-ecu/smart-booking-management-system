@@ -1,5 +1,5 @@
 const { resourceExists, hasOverlap, createBooking } = require("../services/bookingService");
-const { getBookingsForUser } = require("../services/bookingService");
+const { getBookingsForUser, deleteBooking: deleteBookingService } = require("../services/bookingService");
 
 async function postBooking(req, res) {
   try {
@@ -58,6 +58,26 @@ async function getBookings(req, res) {
   }
 }
 
+async function deleteBooking(req, res) {
+  try {
+    const userId = req.user.userId;
+    const bookingId = parseInt(req.params.id);
 
+    if (isNaN(bookingId)) {
+      return res.status(400).json({ error: "Invalid booking ID" });
+    }
 
-module.exports = { postBooking, getBookings };
+    const result = await deleteBookingService(bookingId, userId);
+
+    if (!result.success) {
+      return res.status(result.statusCode).json({ error: result.error });
+    }
+
+    res.status(204).send();
+  } catch (err) {
+    console.error("Error deleting booking:", err);
+    res.status(500).json({ error: "Failed to delete booking" });
+  }
+}
+
+module.exports = { postBooking, getBookings, deleteBooking };
