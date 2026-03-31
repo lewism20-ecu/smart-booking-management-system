@@ -1,7 +1,9 @@
 # Model Layer Documentation
 
-Models are the only layer that communicates directly with the database.
-Controllers call model functions — they never write raw SQL themselves.
+Models are the primary layer that communicates directly with the database.
+Controllers call model functions instead of writing raw SQL directly.
+All new and refactored controllers follow this pattern — raw SQL belongs
+in models, not controllers.
 
 ## Architecture
 ```
