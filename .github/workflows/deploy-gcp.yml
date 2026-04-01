@@ -132,15 +132,6 @@ jobs:
 
           echo "RUN_SA=$RUN_SA" >> "$GITHUB_ENV"
 
-      - name: Grant Secret Manager access to runtime service account
-        run: |
-          for SECRET_NAME in DB_PASSWORD JWT_SECRET; do
-            gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
-              --project "${{ env.PROJECT_ID }}" \
-              --member "serviceAccount:$RUN_SA" \
-              --role "roles/secretmanager.secretAccessor"
-          done
-
       - name: Validate Artifact Registry repository
         run: |
           gcloud artifacts repositories describe "${{ env.ARTIFACT_REPO }}" \
