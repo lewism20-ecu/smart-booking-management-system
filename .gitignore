@@ -69,6 +69,7 @@ web_modules/
 .env
 .env.*
 !.env.example
+!.env.cloudsql.example
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -141,3 +142,8 @@ vite.config.ts.timestamp-*
 
 .env
 .DS_Store
+package-lock.json
+package.json
+
+.idea
+cloud-sql-proxy

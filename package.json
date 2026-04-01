@@ -1,0 +1,44 @@
+{
+  "name": "smart-booking-management-system",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "jest --forceExit",
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "lint": "eslint .",
+    "migrate": "node src/db/migrate.js",
+    "add-test-data": "node src/db/add-test-data.js",
+    "setup-db": "node src/db/db-setup.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lewism20-ecu/smart-booking-management-system.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/lewism20-ecu/smart-booking-management-system/issues"
+  },
+  "homepage": "https://github.com/lewism20-ecu/smart-booking-management-system#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.1.0",
+    "globals": "^17.4.0",
+    "jest": "^30.3.0",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2"
+  }
+}

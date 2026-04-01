@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:18.3-alpine3.22
+    container_name: sbms-db
+    environment:
+      POSTGRES_DB: sbms
+      POSTGRES_USER: sbms_user
+      POSTGRES_PASSWORD: LocalPass123!
+    volumes:
+      - sbms_data_v18:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sbms_user -d sbms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: sbms-api
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: sbms_user
+      DB_PASSWORD: LocalPass123!
+      DB_NAME: sbms
+      NODE_ENV: development
+      JWT_SECRET: 8f3b1c2e9a7d4f6b0c1d2e3f4a5b6c7d
+      JWT_EXPIRES_IN: 1h
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "node src/db/db-setup.js && node src/index.js"
+
+volumes:
+  sbms_data_v18:
