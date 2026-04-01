@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: process.env.ENV_FILE || ".env.local" });
 const express = require("express");
 const app = express();
 
