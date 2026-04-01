@@ -21,6 +21,7 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: ${{ secrets.GCP_REGION }}
   ARTIFACT_REGION: ${{ secrets.GCP_ARTIFACT_REGION }}
+  RUN_SERVICE_ACCOUNT: ${{ secrets.GCP_RUN_SERVICE_ACCOUNT }}
   SERVICE_NAME: ${{ secrets.GCP_SERVICE_NAME }}
   ARTIFACT_REPO: ${{ secrets.GCP_ARTIFACT_REPO }}
   INSTANCE_CONNECTION_NAME: ${{ secrets.GCP_CLOUDSQL_INSTANCE }}
@@ -120,6 +121,26 @@ jobs:
             exit 1
           fi
 
+      - name: Resolve runtime service account
+        run: |
+          if [ -n "$RUN_SERVICE_ACCOUNT" ]; then
+            RUN_SA="$RUN_SERVICE_ACCOUNT"
+          else
+            PROJECT_NUMBER=$(gcloud projects describe "${{ env.PROJECT_ID }}" --format='value(projectNumber)')
+            RUN_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+          fi
+
+          echo "RUN_SA=$RUN_SA" >> "$GITHUB_ENV"
+
+      - name: Grant Secret Manager access to runtime service account
+        run: |
+          for SECRET_NAME in DB_PASSWORD JWT_SECRET; do
+            gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
+              --project "${{ env.PROJECT_ID }}" \
+              --member "serviceAccount:$RUN_SA" \
+              --role "roles/secretmanager.secretAccessor"
+          done
+
       - name: Validate Artifact Registry repository
         run: |
           gcloud artifacts repositories describe "${{ env.ARTIFACT_REPO }}" \
@@ -141,6 +162,7 @@ jobs:
           gcloud run deploy "${{ env.SERVICE_NAME }}" \
             --image "$IMAGE_URI" \
             --region "$RUN_REGION" \
+            --service-account "$RUN_SA" \
             --platform managed \
             --allow-unauthenticated \
             --port 8080 \
