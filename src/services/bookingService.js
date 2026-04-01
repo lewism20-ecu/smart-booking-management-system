@@ -68,11 +68,6 @@ async function deleteBooking(bookingId, userId) {
         return { success: false, error: "Not authorized to delete this booking", statusCode: 403 };
     }
 
-    // Check if already approved (can only delete pending/rejected)
-    if (bookingRecord.status === "approved") {
-        return { success: false, error: "Cannot delete approved bookings", statusCode: 409 };
-    }
-
     // Delete the booking
     await pool.query(`DELETE FROM bookings WHERE booking_id = $1`, [bookingId]);
 
