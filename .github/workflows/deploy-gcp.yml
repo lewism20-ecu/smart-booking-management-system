@@ -107,6 +107,19 @@ jobs:
           echo "AR_REGION=$AR_REGION" >> "$GITHUB_ENV"
           echo "AR_HOST=$AR_HOST" >> "$GITHUB_ENV"
 
+      - name: Resolve and validate Cloud Run region
+        run: |
+          RUN_REGION="$(echo "$REGION" | tr -d '[:space:]')"
+          echo "RUN_REGION=$RUN_REGION" >> "$GITHUB_ENV"
+
+          if ! gcloud run regions list --format='value(locationId)' | grep -Fxq "$RUN_REGION"; then
+            echo "Invalid Cloud Run region: '$RUN_REGION'"
+            echo "Configured REGION secret value: '$REGION'"
+            echo "Available regions:"
+            gcloud run regions list --format='value(locationId)'
+            exit 1
+          fi
+
       - name: Validate Artifact Registry repository
         run: |
           gcloud artifacts repositories describe "${{ env.ARTIFACT_REPO }}" \
@@ -127,7 +140,7 @@ jobs:
         run: |
           gcloud run deploy "${{ env.SERVICE_NAME }}" \
             --image "$IMAGE_URI" \
-            --region "${{ env.REGION }}" \
+            --region "$RUN_REGION" \
             --platform managed \
             --allow-unauthenticated \
             --port 8080 \
@@ -137,5 +150,5 @@ jobs:
 
       - name: Output service URL
         run: |
-          URL=$(gcloud run services describe "${{ env.SERVICE_NAME }}" --region "${{ env.REGION }}" --format='value(status.url)')
+          URL=$(gcloud run services describe "${{ env.SERVICE_NAME }}" --region "$RUN_REGION" --format='value(status.url)')
           echo "Service URL: $URL"
