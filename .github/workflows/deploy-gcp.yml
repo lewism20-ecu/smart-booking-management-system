@@ -20,6 +20,7 @@ permissions:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: ${{ secrets.GCP_REGION }}
+  ARTIFACT_REGION: ${{ secrets.GCP_ARTIFACT_REGION }}
   SERVICE_NAME: ${{ secrets.GCP_SERVICE_NAME }}
   ARTIFACT_REPO: ${{ secrets.GCP_ARTIFACT_REPO }}
   INSTANCE_CONNECTION_NAME: ${{ secrets.GCP_CLOUDSQL_INSTANCE }}
@@ -99,12 +100,25 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Resolve Artifact Registry host
+        run: |
+          AR_REGION="${ARTIFACT_REGION:-$REGION}"
+          AR_HOST="${AR_REGION}-docker.pkg.dev"
+          echo "AR_REGION=$AR_REGION" >> "$GITHUB_ENV"
+          echo "AR_HOST=$AR_HOST" >> "$GITHUB_ENV"
+
+      - name: Validate Artifact Registry repository
+        run: |
+          gcloud artifacts repositories describe "${{ env.ARTIFACT_REPO }}" \
+            --project "${{ env.PROJECT_ID }}" \
+            --location "$AR_REGION"
+
       - name: Configure Docker auth
-        run: gcloud auth configure-docker "${{ env.REGION }}-docker.pkg.dev" --quiet
+        run: gcloud auth configure-docker "$AR_HOST" --quiet
 
       - name: Build and push image
         run: |
-          IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPO }}/sbms:${{ github.sha }}"
+          IMAGE_URI="$AR_HOST/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPO }}/sbms:${{ github.sha }}"
           docker build -t "$IMAGE_URI" .
           docker push "$IMAGE_URI"
           echo "IMAGE_URI=$IMAGE_URI" >> "$GITHUB_ENV"
