@@ -7,7 +7,7 @@ const BASE_URL = `https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-
 
 function getSuffix() {
   const { platform, arch } = process;
-  if (platform === "win32") return ".windows.amd64.exe";
+  if (platform === "win32") return ".x64.exe";
   if (platform === "darwin")
     return arch === "arm64" ? ".darwin.arm64" : ".darwin.amd64";
   return ".linux.amd64";
