@@ -1,4 +1,4 @@
-require("dotenv").config({ path: process.env.ENV_FILE || ".env.local" });
+require('dotenv').config();
 const bcrypt = require("bcrypt");
 const { pool } = require("./index");
 
