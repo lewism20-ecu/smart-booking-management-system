@@ -403,4 +403,35 @@ Content-Type: application/json
 }
 ```
 
+### **DELETE /bookings/:id**
+
+Cancels a booking for the authenticated user.
+
+**Authentication**
+Required: Yes
+Type: Bearer Token (JWT)
+Header format:
+Authorization: Bearer <your_jwt_token>
+
+**URL Parameters**
+
+- `id` (number): booking ID to cancel
+
+**Example Request**
+
+DELETE /api/v1/bookings/12
+Authorization: Bearer <your_jwt_token>
+
+**Success Response (Owner Cancels) — 204 No Content**
+
+(No response body)
+
+**Error Response (Non-owner) — 403 Forbidden**
+
+```json
+{
+  "error": "Not authorized to delete this booking"
+}
+```
+
 

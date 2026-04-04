@@ -1,7 +1,7 @@
-const bookingModel              = require('../models/bookingModel');
-const venueModel                = require('../models/venueModel');
-const resourceModel             = require('../models/resourceModel');
-const { handleModelError }      = require('../utils/apiError');
+const bookingModel = require("../models/bookingModel");
+const venueModel = require("../models/venueModel");
+const resourceModel = require("../models/resourceModel");
+const { handleModelError } = require("../utils/apiError");
 
 /**
  * Parse and validate a route param as a positive integer
@@ -36,16 +36,16 @@ exports.createBooking = async (req, res, next) => {
 
     if (!resourceId || !startTime || !endTime) {
       return res.status(400).json({
-        error:   'BadRequest',
-        message: 'resourceId, startTime, and endTime are required.'
+        error: "BadRequest",
+        message: "resourceId, startTime, and endTime are required.",
       });
     }
 
     const resource = await resourceModel.findResourceById(resourceId);
     if (!resource) {
       return res.status(404).json({
-        error:   'NotFound',
-        message: 'Resource not found.'
+        error: "NotFound",
+        message: "Resource not found.",
       });
     }
 
@@ -54,7 +54,7 @@ exports.createBooking = async (req, res, next) => {
       resourceId,
       startTime,
       endTime,
-      resource.approval_required
+      resource.approval_required,
     );
 
     res.status(201).json(booking);
@@ -72,36 +72,38 @@ exports.updateBooking = async (req, res, next) => {
     const bookingId = parseId(req.params.id);
     if (!bookingId) {
       return res.status(400).json({
-        error:   'BadRequest',
-        message: 'Booking ID must be a positive integer.'
+        error: "BadRequest",
+        message: "Booking ID must be a positive integer.",
       });
     }
 
     const { startTime, endTime } = req.body;
     if (!startTime || !endTime) {
       return res.status(400).json({
-        error:   'BadRequest',
-        message: 'startTime and endTime are required.'
+        error: "BadRequest",
+        message: "startTime and endTime are required.",
       });
     }
 
     const existing = await bookingModel.findBookingById(bookingId);
     if (!existing) {
       return res.status(404).json({
-        error:   'NotFound',
-        message: 'Booking not found.'
+        error: "NotFound",
+        message: "Booking not found.",
       });
     }
 
     if (existing.user_id !== req.user.userId) {
       return res.status(403).json({
-        error:   'Forbidden',
-        message: 'You do not have permission to modify this booking.'
+        error: "Forbidden",
+        message: "You do not have permission to modify this booking.",
       });
     }
 
     const booking = await bookingModel.rescheduleBooking(
-      bookingId, startTime, endTime
+      bookingId,
+      startTime,
+      endTime,
     );
     res.json(booking);
   } catch (err) {
@@ -118,27 +120,27 @@ exports.cancelBooking = async (req, res, next) => {
     const bookingId = parseId(req.params.id);
     if (!bookingId) {
       return res.status(400).json({
-        error:   'BadRequest',
-        message: 'Booking ID must be a positive integer.'
+        error: "BadRequest",
+        message: "Booking ID must be a positive integer.",
       });
     }
 
     const existing = await bookingModel.findBookingById(bookingId);
     if (!existing) {
       return res.status(404).json({
-        error:   'NotFound',
-        message: 'Booking not found.'
+        error: "NotFound",
+        message: "Booking not found.",
       });
     }
 
     if (existing.user_id !== req.user.userId) {
       return res.status(403).json({
-        error:   'Forbidden',
-        message: 'You do not have permission to cancel this booking.'
+        error: "Forbidden",
+        message: "You do not have permission to cancel this booking.",
       });
     }
 
-    await bookingModel.updateBookingStatus(bookingId, 'cancelled');
+    await bookingModel.updateBookingStatus(bookingId, "cancelled");
     res.status(204).send();
   } catch (err) {
     next(err);
@@ -154,40 +156,46 @@ exports.approveBooking = async (req, res, next) => {
     const bookingId = parseId(req.params.id);
     if (!bookingId) {
       return res.status(400).json({
-        error:   'BadRequest',
-        message: 'Booking ID must be a positive integer.'
+        error: "BadRequest",
+        message: "Booking ID must be a positive integer.",
       });
     }
 
     const booking = await bookingModel.findBookingById(bookingId);
     if (!booking) {
       return res.status(404).json({
-        error:   'NotFound',
-        message: 'Booking not found.'
+        error: "NotFound",
+        message: "Booking not found.",
       });
     }
 
-    if (booking.status !== 'pending') {
+    if (booking.status !== "pending") {
       return res.status(409).json({
-        error:   'Conflict',
-        message: `Booking cannot be approved — current status is '${booking.status}'.`
+        error: "Conflict",
+        message: `Booking cannot be approved — current status is '${booking.status}'.`,
       });
     }
 
-    if (req.user.role !== 'admin') {
-      const resource  = await resourceModel.findResourceById(booking.resource_id);
+    if (req.user.role !== "admin") {
+      const resource = await resourceModel.findResourceById(
+        booking.resource_id,
+      );
       const isManager = await venueModel.isVenueManager(
-        req.user.userId, resource.venue_id
+        req.user.userId,
+        resource.venue_id,
       );
       if (!isManager) {
         return res.status(403).json({
-          error:   'Forbidden',
-          message: 'You are not a manager of the venue for this booking.'
+          error: "Forbidden",
+          message: "You are not a manager of the venue for this booking.",
         });
       }
     }
 
-    const updated = await bookingModel.updateBookingStatus(bookingId, 'approved');
+    const updated = await bookingModel.updateBookingStatus(
+      bookingId,
+      "approved",
+    );
     res.json(updated);
   } catch (err) {
     next(err);
@@ -203,40 +211,46 @@ exports.rejectBooking = async (req, res, next) => {
     const bookingId = parseId(req.params.id);
     if (!bookingId) {
       return res.status(400).json({
-        error:   'BadRequest',
-        message: 'Booking ID must be a positive integer.'
+        error: "BadRequest",
+        message: "Booking ID must be a positive integer.",
       });
     }
 
     const booking = await bookingModel.findBookingById(bookingId);
     if (!booking) {
       return res.status(404).json({
-        error:   'NotFound',
-        message: 'Booking not found.'
+        error: "NotFound",
+        message: "Booking not found.",
       });
     }
 
-    if (booking.status !== 'pending') {
+    if (booking.status !== "pending") {
       return res.status(409).json({
-        error:   'Conflict',
-        message: `Booking cannot be rejected — current status is '${booking.status}'.`
+        error: "Conflict",
+        message: `Booking cannot be rejected — current status is '${booking.status}'.`,
       });
     }
 
-    if (req.user.role !== 'admin') {
-      const resource  = await resourceModel.findResourceById(booking.resource_id);
+    if (req.user.role !== "admin") {
+      const resource = await resourceModel.findResourceById(
+        booking.resource_id,
+      );
       const isManager = await venueModel.isVenueManager(
-        req.user.userId, resource.venue_id
+        req.user.userId,
+        resource.venue_id,
       );
       if (!isManager) {
         return res.status(403).json({
-          error:   'Forbidden',
-          message: 'You are not a manager of the venue for this booking.'
+          error: "Forbidden",
+          message: "You are not a manager of the venue for this booking.",
         });
       }
     }
 
-    const updated = await bookingModel.updateBookingStatus(bookingId, 'rejected');
+    const updated = await bookingModel.updateBookingStatus(
+      bookingId,
+      "rejected",
+    );
     res.json(updated);
   } catch (err) {
     next(err);

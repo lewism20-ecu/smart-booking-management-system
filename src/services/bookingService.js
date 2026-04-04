@@ -50,4 +50,28 @@ async function getBookingsForUser(userId) {
     return result.rows;
 }
 
-module.exports = { getBookingsForUser, resourceExists, hasOverlap, createBooking };
+async function deleteBooking(bookingId, userId) {
+    // Verify booking exists and belongs to user
+    const booking = await pool.query(
+        `SELECT booking_id, user_id, status FROM bookings WHERE booking_id = $1`,
+        [bookingId]
+    );
+
+    if (booking.rowCount === 0) {
+        return { success: false, error: "Booking not found", statusCode: 404 };
+    }
+
+    const bookingRecord = booking.rows[0];
+
+    // Check ownership
+    if (bookingRecord.user_id !== userId) {
+        return { success: false, error: "Not authorized to delete this booking", statusCode: 403 };
+    }
+
+    // Delete the booking
+    await pool.query(`DELETE FROM bookings WHERE booking_id = $1`, [bookingId]);
+
+    return { success: true, statusCode: 204 };
+}
+
+module.exports = { getBookingsForUser, resourceExists, hasOverlap, createBooking, deleteBooking };
