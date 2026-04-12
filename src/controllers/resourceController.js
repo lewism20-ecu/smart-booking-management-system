@@ -3,10 +3,18 @@ const { handleModelError } = require('../utils/apiError');
 
 exports.listResources = async (req, res, next) => {
   try {
-    const venueId = req.query.venueId
-      ? parseInt(req.query.venueId, 10)
-      : null;
-    const resources = await resourceModel.getAllResources(venueId);
+    const { venueId, date } = req.query; // Capture 'date' from Postman URL
+    
+    // Validate venueId is a number if it exists
+    if (venueId && isNaN(parseInt(venueId, 10))) {
+      return res.status(400).json({ error: 'BadRequest', message: 'venueId must be a number' });
+    }
+
+    const parsedVenueId = venueId ? parseInt(venueId, 10) : null;
+    
+    // Pass BOTH variables to the model
+    const resources = await resourceModel.getAllResources(parsedVenueId, date);
+    
     res.json(resources);
   } catch (err) {
     next(err);
