@@ -41,24 +41,33 @@ async function createResource({
 }
 
 /**
- * Get all resources, optionally filtered by venue
+ * Get all resources, optionally filtered by venue and availability date
  * @param {number|null} venueId - Optional venue filter
+ * @param {string|null} date - Optional date filter (YYYY-MM-DD)
  * @returns {Promise<Array>} List of resources
  */
-async function getAllResources(venueId = null) {
+async function getAllResources(venueId = null, date = null) {
+  let query = `SELECT * FROM resources WHERE 1=1`;
+  const params = [];
+
   if (venueId) {
-    const { rows } = await pool.query(
-      `SELECT * FROM resources
-       WHERE venue_id = $1
-       ORDER BY name ASC`,
-      [venueId]
-    );
-    return rows;
+    params.push(venueId);
+    query += ` AND venue_id = $${params.length}`;
   }
 
-  const { rows } = await pool.query(
-    `SELECT * FROM resources ORDER BY name ASC`
-  );
+  if (date) {
+    params.push(date);
+    // Exclude resources that have a booking on this date
+    query += ` AND resource_id NOT IN (
+      SELECT resource_id FROM bookings 
+      WHERE (status = 'pending' OR status = 'approved' OR status = 'confirmed') 
+      AND (start_time::date = $${params.length})
+    )`;
+  }
+
+  query += ` ORDER BY name ASC`;
+
+  const { rows } = await pool.query(query, params);
   return rows;
 }
 
