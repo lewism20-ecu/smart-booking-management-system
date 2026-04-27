@@ -1,63 +1,258 @@
-const { resourceExists, hasOverlap, createBooking } = require("../services/bookingService");
-const { getBookingsForUser } = require("../services/bookingService");
+const bookingModel = require("../models/bookingModel");
+const venueModel = require("../models/venueModel");
+const resourceModel = require("../models/resourceModel");
+const { handleModelError } = require("../utils/apiError");
 
-async function postBooking(req, res) {
+/**
+ * Parse and validate a route param as a positive integer
+ * @param {string} value
+ * @returns {number|null}
+ */
+function parseId(value) {
+  const id = parseInt(value, 10);
+  return Number.isNaN(id) || id < 1 ? null : id;
+}
+
+/**
+ * GET /bookings
+ * Returns all bookings for the authenticated user
+ */
+exports.getBookings = async (req, res, next) => {
   try {
-    const userId = req.user.userId;
+    const bookings = await bookingModel.getBookingsByUser(req.user.userId);
+    res.json(bookings);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /bookings
+ * Creates a new booking for the authenticated user
+ */
+exports.createBooking = async (req, res, next) => {
+  try {
     const { resourceId, startTime, endTime } = req.body;
 
-    // validate required fields
     if (!resourceId || !startTime || !endTime) {
-      return res.status(400).json({error: "Missing required fields" });
+      return res.status(400).json({
+        error: "BadRequest",
+        message: "resourceId, startTime, and endTime are required.",
+      });
     }
 
-    //validate time window
-    if (new Date(startTime) >= new Date(endTime)) {
-      return res.status(400).json({ error: "startTime must be before endTime" });
-    }
-
-    // check resource exists
-    const resource = await resourceExists(resourceId);
+    const resource = await resourceModel.findResourceById(resourceId);
     if (!resource) {
-      return res.status(404).json({ error: "Resource not found" });
+      return res.status(404).json({
+        error: "NotFound",
+        message: "Resource not found.",
+      });
     }
 
-    // check for overlapping bookings
-    const overlap = await hasOverlap(resourceId, startTime, endTime);
-    if (overlap) {
-      return res.status(409).json({ error: "Resource already booked for this time window"});
-    }
-
-    // determine status
-    const status = resource.approval_required ? "pending" : "approved";
-
-    // insert booking
-    const booking = await createBooking(
-      userId,
+    const booking = await bookingModel.createBooking(
+      req.user.userId,
       resourceId,
       startTime,
       endTime,
-      status
+      resource.approval_required,
     );
 
-    return res.status(201).json(booking);
+    res.status(201).json(booking);
   } catch (err) {
-    console.error("Error creating booking:", err);
-    res.status(500).json({ error: "Failed to create booking" });
+    handleModelError(err, res, next);
   }
-}
+};
 
-async function getBookings(req, res) {
+/**
+ * PATCH /bookings/:id
+ * Reschedules an existing booking — must be owner
+ */
+exports.updateBooking = async (req, res, next) => {
   try {
-    const userId = req.user.userId;
-    const bookings = await getBookingsForUser(userId);
-    res.status(200).json({ bookings });
+    const bookingId = parseId(req.params.id);
+    if (!bookingId) {
+      return res.status(400).json({
+        error: "BadRequest",
+        message: "Booking ID must be a positive integer.",
+      });
+    }
+
+    const { startTime, endTime } = req.body;
+    if (!startTime || !endTime) {
+      return res.status(400).json({
+        error: "BadRequest",
+        message: "startTime and endTime are required.",
+      });
+    }
+
+    const existing = await bookingModel.findBookingById(bookingId);
+    if (!existing) {
+      return res.status(404).json({
+        error: "NotFound",
+        message: "Booking not found.",
+      });
+    }
+
+    if (existing.user_id !== req.user.userId) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "You do not have permission to modify this booking.",
+      });
+    }
+
+    const booking = await bookingModel.rescheduleBooking(
+      bookingId,
+      startTime,
+      endTime,
+    );
+    res.json(booking);
   } catch (err) {
-    console.error("Error fetching bookings:", err);
-    res.status(500).json({ error: "Failed to fetch bookings" });
+    handleModelError(err, res, next);
   }
-}
+};
 
+/**
+ * DELETE /bookings/:id
+ * Cancels a booking — must be owner
+ */
+exports.cancelBooking = async (req, res, next) => {
+  try {
+    const bookingId = parseId(req.params.id);
+    if (!bookingId) {
+      return res.status(400).json({
+        error: "BadRequest",
+        message: "Booking ID must be a positive integer.",
+      });
+    }
 
+    const existing = await bookingModel.findBookingById(bookingId);
+    if (!existing) {
+      return res.status(404).json({
+        error: "NotFound",
+        message: "Booking not found.",
+      });
+    }
 
-module.exports = { postBooking, getBookings };
+    if (existing.user_id !== req.user.userId) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "You do not have permission to cancel this booking.",
+      });
+    }
+
+    await bookingModel.updateBookingStatus(bookingId, "cancelled");
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /bookings/:id/approve
+ * Approves a pending booking — manager/admin only
+ */
+exports.approveBooking = async (req, res, next) => {
+  try {
+    const bookingId = parseId(req.params.id);
+    if (!bookingId) {
+      return res.status(400).json({
+        error: "BadRequest",
+        message: "Booking ID must be a positive integer.",
+      });
+    }
+
+    const booking = await bookingModel.findBookingById(bookingId);
+    if (!booking) {
+      return res.status(404).json({
+        error: "NotFound",
+        message: "Booking not found.",
+      });
+    }
+
+    if (booking.status !== "pending") {
+      return res.status(409).json({
+        error: "Conflict",
+        message: `Booking cannot be approved — current status is '${booking.status}'.`,
+      });
+    }
+
+    if (req.user.role !== "admin") {
+      const resource = await resourceModel.findResourceById(
+        booking.resource_id,
+      );
+      const isManager = await venueModel.isVenueManager(
+        req.user.userId,
+        resource.venue_id,
+      );
+      if (!isManager) {
+        return res.status(403).json({
+          error: "Forbidden",
+          message: "You are not a manager of the venue for this booking.",
+        });
+      }
+    }
+
+    const updated = await bookingModel.updateBookingStatus(
+      bookingId,
+      "approved",
+    );
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /bookings/:id/reject
+ * Rejects a pending booking — manager/admin only
+ */
+exports.rejectBooking = async (req, res, next) => {
+  try {
+    const bookingId = parseId(req.params.id);
+    if (!bookingId) {
+      return res.status(400).json({
+        error: "BadRequest",
+        message: "Booking ID must be a positive integer.",
+      });
+    }
+
+    const booking = await bookingModel.findBookingById(bookingId);
+    if (!booking) {
+      return res.status(404).json({
+        error: "NotFound",
+        message: "Booking not found.",
+      });
+    }
+
+    if (booking.status !== "pending") {
+      return res.status(409).json({
+        error: "Conflict",
+        message: `Booking cannot be rejected — current status is '${booking.status}'.`,
+      });
+    }
+
+    if (req.user.role !== "admin") {
+      const resource = await resourceModel.findResourceById(
+        booking.resource_id,
+      );
+      const isManager = await venueModel.isVenueManager(
+        req.user.userId,
+        resource.venue_id,
+      );
+      if (!isManager) {
+        return res.status(403).json({
+          error: "Forbidden",
+          message: "You are not a manager of the venue for this booking.",
+        });
+      }
+    }
+
+    const updated = await bookingModel.updateBookingStatus(
+      bookingId,
+      "rejected",
+    );
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+};

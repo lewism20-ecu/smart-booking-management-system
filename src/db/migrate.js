@@ -1,4 +1,4 @@
-require("dotenv").config({ path: process.env.ENV_FILE || ".env.local" });
+require('dotenv').config();
 const fs = require("fs");
 const path = require("path");
 const { pool } = require("./index");

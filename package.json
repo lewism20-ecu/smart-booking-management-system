@@ -13,7 +13,13 @@
     "lint": "eslint .",
     "migrate": "node src/db/migrate.js",
     "add-test-data": "node src/db/add-test-data.js",
-    "setup-db": "node src/db/db-setup.js"
+    "setup-db": "node src/db/db-setup.js",
+    "seed": "node src/db/db-setup.js",
+    "install-proxy": "node scripts/install-proxy.js",
+    "proxy": "node scripts/proxy.js",
+    "cloud-dev": "cross-env ENV_FILE=.env.cloudsql DB_HOST=127.0.0.1 DB_PORT=5434 DB_SSL=false node src/index.js",
+    "cloud-migrate": "cross-env ENV_FILE=.env.cloudsql DB_HOST=127.0.0.1 DB_PORT=5434 DB_SSL=false node src/db/migrate.js",
+    "cloud-setup": "npm run cloud-migrate"
   },
   "repository": {
     "type": "git",
@@ -35,6 +41,7 @@
     "pg": "^8.20.0"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "eslint": "^10.1.0",
     "globals": "^17.4.0",
     "jest": "^30.3.0",

@@ -1,6 +1,6 @@
 # Local dev against Cloud SQL — developer setup
 
-Use this once to get `make proxy` and `make cloud-dev` working.
+Use this once to get the proxy and cloud dev server running. All commands work on Windows, Mac, and Linux via `npm run`. Mac/Linux users can also use the equivalent `make` commands.
 
 ## Quick start (you already received DB credentials)
 
@@ -20,8 +20,16 @@ The last command should print `cloud-computing-485217`.
 
 3. From the repo root, create your local env file:
 
+**Mac / Linux:**
+
 ```bash
 cp .env.cloudsql.example .env.cloudsql
+```
+
+**Windows (PowerShell):**
+
+```powershell
+Copy-Item .env.cloudsql.example .env.cloudsql
 ```
 
 4. Edit `.env.cloudsql` and set:
@@ -35,25 +43,25 @@ DB_PASSWORD=<your-assigned-password>
 
 ```bash
 npm install
-make install-proxy
+npm run install-proxy  # or: make install-proxy
 ```
 
 6. Start the proxy in terminal 1:
 
 ```bash
-make proxy
+npm run proxy  # or: make proxy
 ```
 
 7. Optional one-time DB setup (schema/migrations) in terminal 2:
 
 ```bash
-make cloud-setup
+npm run cloud-setup  # or: make cloud-setup
 ```
 
 8. Start the API in terminal 2:
 
 ```bash
-make cloud-dev
+npm run cloud-dev  # or: make cloud-dev
 ```
 
 ## Prerequisites
@@ -69,8 +77,8 @@ If you don't have both of these, ask the project owner before continuing.
 
 | Symptom                                      | Likely cause                            | Fix                                                            |
 | -------------------------------------------- | --------------------------------------- | -------------------------------------------------------------- |
-| `proxy: permission denied`                   | Proxy binary not executable             | Run `chmod +x cloud-sql-proxy`                                 |
-| `Error: connect ECONNREFUSED 127.0.0.1:5434` | Proxy not running                       | Start `make proxy` in another terminal first                   |
+| `proxy: permission denied`                   | Proxy binary not executable             | Re-run `npm run install-proxy`                                 |
+| `Error: connect ECONNREFUSED 127.0.0.1:5434` | Proxy not running                       | Start `npm run proxy` in another terminal first                |
 | `password authentication failed`             | Wrong DB_USER or DB_PASSWORD            | Check `.env.cloudsql` — use the credentials the admin gave you |
 | `IAM permission denied`                      | Application default credentials not set | Re-run `gcloud auth application-default login`                 |
 | `CLOUDSQL_INSTANCE is empty`                 | `.env.cloudsql` missing or malformed    | Check the file exists and `GCP_CLOUDSQL_INSTANCE=` is set      |
