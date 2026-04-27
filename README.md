@@ -125,3 +125,90 @@ make cloud-dev    # run API locally against Cloud SQL
 | POST   | `/api/v1/bookings`    | Yes  | Create a booking    |
 
 Protected routes require: `Authorization: Bearer <token>`
+
+---
+
+## API Usage Examples
+
+### 1. Sign Up (Create an account)
+**Request:**
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "StrongPass123!"
+  }'
+```
+**Response (201 Created):**
+```json
+{
+  "message": "User created successfully",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI...",
+  "user": {
+    "userId": 1,
+    "email": "test@example.com",
+    "role": "user"
+  }
+}
+```
+
+### 2. Log In
+**Request:**
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "StrongPass123!"
+  }'
+```
+**Response (200 OK):**
+```json
+{
+  "message": "Login successful",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI...",
+  "user": {
+    "userId": 1,
+    "email": "test@example.com",
+    "role": "user"
+  }
+}
+```
+
+### 3. Access Protected Route (e.g., Get Profile)
+**Request:**
+```bash
+curl -X GET http://localhost:8080/api/v1/users/me \
+  -H "Authorization: Bearer <YOUR_TOKEN_HERE>"
+```
+
+---
+
+## Deployment
+
+The application is container-ready and can be deployed to any Docker-compatible hosting platform (e.g., Google Cloud Run, AWS ECS, Azure Container Apps, or Heroku).
+
+1. **Build the Docker Image:**
+   ```bash
+   docker build -t smart-booking-api .
+   ```
+
+2. **Push to your Container Registry:**
+   ```bash
+   docker tag smart-booking-api gcr.io/your-project/smart-booking-api
+   docker push gcr.io/your-project/smart-booking-api
+   ```
+
+3. **Set Production Environment Variables:**
+   Ensure the following environment variables are securely configured in your deployment environment:
+   - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` (Pointing to your managed production database)
+   - `NODE_ENV=production`
+   - `JWT_SECRET` (Use a strong generated secret)
+   - `JWT_EXPIRES_IN`
+
+4. **Run Database Migrations:**
+   Ensure your production database has the latest schema by securely running migrations before directing traffic to the API:
+   ```bash
+   node src/db/migrate.js
+   ```
